@@ -46,10 +46,11 @@ RUN set -xe \
 	&& apt-get purge -y --auto-remove $buildDeps $fetchDeps \
 	&& rm -rf $ERL_TOP /var/lib/apt/lists/*
 
-RUN mkdir certs
-COPY repro /
+RUN mkdir certs server
+COPY erlang_server server
 COPY ca_certificate.pem certs
 COPY server_certificate.pem certs
 COPY server_key.pem certs
+WORKDIR server
 
-CMD ["erl"]
+CMD ["./erlang_server"]
