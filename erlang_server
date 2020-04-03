@@ -34,20 +34,31 @@ server(Port) ->
 accept(LSocket) ->
    {ok, Socket} = ssl:transport_accept(LSocket),
    Pid = spawn(fun() ->
-        ok = ssl:ssl_accept(Socket),
-        io:format("Connection accepted ~p~n", [Socket]),
-        loop(Socket)
+        try
+            ok = ssl:ssl_accept(Socket),
+            io:format("Connection accepted ~p~n", [Socket]),
+            send_html(Socket)
+        catch
+            _:_ -> ignore
+        end
    end),
    ssl:controlling_process(Socket, Pid),
    accept(LSocket).
 
-loop(Socket) ->
+send_html(Socket) ->
    ssl:setopts(Socket, [{active, once}]),
    receive
-   {ssl,Sock, Data} ->
-        io:format("Got packet: ~p~n", [Data]),
-        ssl:send(Sock, Data),
-        loop(Socket);
+   {ssl,Sock, _Data} ->
+        ssl:send(Sock, "HTTP/1.1 200 OK\n"++
+						"Date: Sun, 18 Oct 2009 08:56:53 GMT\r\n"++
+				"Last-Modified: Sat, 20 Nov 2004 07:16:26 GMT\r\n"++
+				"ETag: 10000000565a5-2c-3e94b66c2e680\r\n" ++
+				"Accept-Ranges: bytes\r\n"++
+				"Content-Length: 44\r\n"++
+				"Connection: close\r\n"++
+				"Content-Type: text/html\r\n"++
+				"\r\n"++
+				"<html><body><h1>It works!</h1></body></html>\r\n");
    {ssl_closed, Sock} ->
         io:format("Closing socket: ~p~n", [Sock]);
    Error ->
