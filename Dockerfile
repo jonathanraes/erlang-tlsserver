@@ -12,7 +12,7 @@ RUN set -xe \
 		ca-certificates' \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends $fetchDeps \
-	&& curl -fSL -o otp-src.tar.gz "$OTP_DOWNLOAD_URL" \
+	# && curl -fSL -o otp-src.tar.gz "$OTP_DOWNLOAD_URL" \
 #	&& echo "$OTP_DOWNLOAD_SHA256  otp-src.tar.gz" | sha256sum -c - \
 	&& runtimeDeps=' \
 		libodbc1 \
@@ -33,20 +33,24 @@ RUN set -xe \
 	&& apt-get install -y --no-install-recommends $runtimeDeps \
 	&& apt-get install -y --no-install-recommends $buildDeps \
 	&& export ERL_TOP="/usr/src/otp_src_${OTP_VERSION%%@*}" \
-	&& mkdir -vp $ERL_TOP \
-	&& tar -xzf otp-src.tar.gz -C $ERL_TOP --strip-components=1 \
-	&& rm otp-src.tar.gz \
-	&& ( cd $ERL_TOP \
+	&& mkdir -vp $ERL_TOP 
+
+RUN mkdir certs server otp
+
+COPY otp-OTP-18.3.4.6-modified.tar.gz otp
+
+RUN cd otp \
+		&& tar -xzf otp-OTP-18.3.4.6-modified.tar.gz
+RUN (cd otp/otp-OTP-18.3.4.6 \
 	  && ./otp_build autoconf \
 	  && gnuArch="$(dpkg-architecture --query DEB_HOST_GNU_TYPE)" \
 	  && ./configure --build="$gnuArch" --enable-sctp \
 	  && make -j$(nproc) \
-	  && make install ) \
+	  && make install) \
 	&& find /usr/local -name examples | xargs rm -rf \
 	&& apt-get purge -y --auto-remove $buildDeps $fetchDeps \
 	&& rm -rf $ERL_TOP /var/lib/apt/lists/*
 
-RUN mkdir certs server
 COPY erlang_server server
 COPY ca_certificate.pem certs
 COPY server_certificate.pem certs
