@@ -58,7 +58,7 @@ send_html(Socket) ->
 				"Connection: close\r\n"++
 				"Content-Type: text/html\r\n"++
 				"\r\n"++
-				"<html><body><h1>It works!</h1></body></html>\r\n");
+				"<html><script src='myscripts.js'></script><body><h1>It works!</h1></body></html>\r\n");
    {ssl_closed, Sock} ->
         io:format("Closing socket: ~p~n", [Sock]);
    Error ->
